@@ -10,55 +10,76 @@
         .btn-primary:hover { background: #0051a2; }
         .admin-link { color: #666; text-decoration: none; font-size: 14px; }
         .admin-link:hover { text-decoration: underline; }
-        #search { width: 100%; padding: 12px; font-size: 16px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { padding: 8px 16px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 5px; font-weight: bold; }
+        .tab-btn.active { background: #0066cc; color: white; border-color: #0066cc; }
+
+        #search { width: 100%; padding: 12px; font-size: 16px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 15px; }
         
         #notFoundContainer { display: none; margin-top: 10px; padding: 12px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 5px; text-align: center; }
         #notFoundContainer a { color: #856404; font-weight: bold; text-decoration: underline; }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; margin-top: 25px; }
-        .card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; text-align: center; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-top: 25px; }
+        .card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; text-align: center; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; }
         .card h3 { margin: 10px 0 5px 0; }
-        .card a { color: #0066cc; text-decoration: none; display: inline-block; margin-top: 10px; }
-        .card a:hover { text-decoration: underline; }
+        .card .main-cat { font-size: 12px; background: #eee; padding: 2px 6px; border-radius: 3px; font-weight: bold; color: #555; }
+        .card a.profile-link { color: #0066cc; text-decoration: none; display: inline-block; margin: 10px 0; font-weight: bold; }
+        .card a.profile-link:hover { text-decoration: underline; }
 
-        /* Farbliche Markierungen für die Badges */
         .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 12px; margin-top: 5px; }
-        .bg-zeitverschwendung { background: #dc3545; } /* Rot */
-        .bg-ungeprueft { background: #fd7e14; }      /* Orange */
-        .bg-echt { background: #28a745; }           /* Grün */
-        .bg-nicht-echt { background: #dc3545; }     /* Rot */
+        .bg-zeitverschwendung { background: #dc3545; }
+        .bg-ungeprueft { background: #fd7e14; }
+        .bg-echt { background: #28a745; }
+        .bg-nicht-echt { background: #dc3545; }
+
+        /* Melden-Bereich innerhalb der Karte */
+        .report-section { margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; text-align: left; font-size: 13px; }
+        .report-toggle { background: none; border: none; color: #666; cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; display: block; width: 100%; text-align: center; margin-bottom: 5px; }
+        .report-form { display: none; margin-top: 5px; }
+        .report-form textarea { width: 100%; height: 50px; font-size: 12px; padding: 5px; box-sizing: border-box; resize: none; border: 1px solid #ccc; border-radius: 4px; }
+        .report-form button { background: #6c757d; color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 3px; cursor: pointer; margin-top: 4px; width: 100%; }
+        .report-form button:hover { background: #5a6268; }
+        .char-count { font-size: 10px; color: #888; text-align: right; display: block; }
+        .report-msg { font-size: 11px; color: #28a745; text-align: center; margin-top: 3px; font-weight: bold; display: none; }
     </style>
 </head>
 <body>
 
-    <!-- Navigationsleiste oben -->
     <div class="nav-links">
         <a href="submit.html" class="btn-primary">+ Neues Profil einreichen</a>
         <a href="admin.html" class="admin-link">Admin-Bereich ⚙️</a>
     </div>
 
     <h1>Community Rankings</h1>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-cat="all">Alle</button>
+        <button class="tab-btn" data-cat="Dom">Dom</button>
+        <button class="tab-btn" data-cat="Sub">Sub</button>
+    </div>
     
-    <!-- Suchfeld -->
     <input type="text" id="search" placeholder="Nach Benutzernamen suchen...">
     
-    <!-- Dynamischer Hinweis, falls kein Treffer vorliegt -->
     <div id="notFoundContainer">
-        Kein Eintrag für "<span id="missingTerm"></span>" gefunden. 
+        Kein Eintrag für "<span id="missingTerm"></span>" in Kategorie <span id="missingCatText"></span> gefunden. 
         <a id="submitLink" href="submit.html">Diesen Namen jetzt einreichen?</a>
     </div>
 
     <div id="gallery" class="grid">Lade Einträge...</div>
 
     <script type="module">
-        import { db, collection, getDocs, query, where } from './app.js';
+        import { db, collection, getDocs, doc, updateDoc, arrayUnion, query, where } from './app.js';
 
         let allSubmissions = [];
+        let currentTab = "all";
         const gallery = document.getElementById('gallery');
         const searchInput = document.getElementById('search');
         const notFoundContainer = document.getElementById('notFoundContainer');
         const missingTermSpan = document.getElementById('missingTerm');
+        const missingCatText = document.getElementById('missingCatText');
         const submitLink = document.getElementById('submitLink');
+        const tabButtons = document.querySelectorAll('.tab-btn');
 
         async function loadApprovedSubmissions() {
             try {
@@ -67,23 +88,38 @@
                 
                 allSubmissions = [];
                 querySnapshot.forEach((doc) => {
+                    allSubmissions.path = doc.ref; // Sicherstellen, dass ID da ist
                     allSubmissions.push({ id: doc.id, ...doc.data() });
                 });
 
-                renderGallery(allSubmissions);
+                filterAndRender();
             } catch (error) {
                 gallery.textContent = "Fehler beim Laden der Daten.";
                 console.error(error);
             }
         }
 
-        function renderGallery(items, searchTerm = "") {
+        function filterAndRender() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+
+            let filtered = allSubmissions.filter(item => {
+                const matchesTab = (currentTab === "all" || item.mainCategory === currentTab);
+                const matchesSearch = item.username.toLowerCase().includes(searchTerm);
+                return matchesTab && matchesSearch;
+            });
+
+            renderGallery(filtered, searchTerm);
+        }
+
+        function renderGallery(items, searchTerm) {
             if (items.length === 0) {
                 gallery.innerHTML = "<p>Keine freigegebenen Einträge gefunden.</p>";
                 
-                if (searchTerm.trim() !== "") {
+                if (searchTerm !== "") {
                     missingTermSpan.textContent = searchTerm;
-                    submitLink.href = `submit.html?username=${encodeURIComponent(searchTerm)}`;
+                    const activeCatForSubmit = currentTab === "all" ? "Dom" : currentTab;
+                    missingCatText.textContent = `(${activeCatForSubmit})`;
+                    submitLink.href = `submit.html?username=${encodeURIComponent(searchTerm)}&cat=${activeCatForSubmit}`;
                     notFoundContainer.style.display = "block";
                 } else {
                     notFoundContainer.style.display = "none";
@@ -92,7 +128,6 @@
             }
 
             notFoundContainer.style.display = "none";
-            // Hier wird bewusst KEIN Bild (<img>) mehr generiert
             gallery.innerHTML = items.map(item => {
                 let badgeClass = "bg-ungeprueft";
                 const cat = item.category || "ungeprüft";
@@ -101,22 +136,83 @@
 
                 return `
                     <div class="card">
-                        <h3>${item.username}</h3>
-                        <div><span class="badge ${badgeClass}">${cat}</span></div>
-                        <br>
-                        <a href="${item.profileLinks[0]}" target="_blank">Zum Profil</a>
+                        <div>
+                            <span class="main-cat">${item.mainCategory || 'Dom'}</span>
+                            <h3>${item.username}</h3>
+                            <div><span class="badge ${badgeClass}">${cat}</span></div>
+                            <br>
+                            <a href="${item.profileLinks[0]}" target="_blank" class="profile-link">Zum Profil</a>
+                        </div>
+                        
+                        <div class="report-section">
+                            <button class="report-toggle" onclick="toggleReportForm('${item.id}')">Anmerkung / Melden</button>
+                            <div id="report-form-${item.id}" class="report-form">
+                                <textarea id="report-text-${item.id}" maxlength="180" placeholder="Max. 180 Zeichen..." oninput="updateCharCount('${item.id}')"></textarea>
+                                <span id="char-count-${item.id}" class="char-count">180 Zeichen übrig</span>
+                                <button onclick="sendReport('${item.id}')">Absenden</button>
+                                <div id="report-msg-${item.id}" class="report-msg">Gesendet!</div>
+                            </div>
+                        </div>
                     </div>
                 `;
             }).join('');
         }
 
-        // Live-Suche (korrigiert)
-        searchInput.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const filtered = allSubmissions.filter(item => 
-                item.username.toLowerCase().includes(term)
-            );
-            renderGallery(filtered, term);
+        // Hilfsfunktionen global verfügbar machen für onclick
+        window.toggleReportForm = function(id) {
+            const form = document.getElementById(`report-form-${id}`);
+            form.style.display = form.style.display === 'block' ? 'none' : 'block';
+        };
+
+        window.updateCharCount = function(id) {
+            const textarea = document.getElementById(`report-text-${id}`);
+            const countSpan = document.getElementById(`char-count-${id}`);
+            const remaining = 180 - textarea.value.length;
+            countSpan.textContent = `${remaining} Zeichen übrig`;
+        };
+
+        window.sendReport = async function(id) {
+            const textarea = document.getElementById(`report-text-${id}`);
+            const msgDiv = document.getElementById(`report-msg-${id}`);
+            const text = textarea.value.trim();
+
+            if (!text) {
+                alert("Bitte gib eine Nachricht ein.");
+                return;
+            }
+
+            try {
+                const docRef = doc(db, "submissions", id);
+                // Nachricht in einem Array "reports" speichern
+                await updateDoc(docRef, {
+                    reports: arrayUnion({
+                        message: text,
+                        createdAt: new Date().toISOString()
+                    })
+                });
+
+                msgDiv.style.display = "block";
+                textarea.value = "";
+                setTimeout(() => {
+                    msgDiv.style.display = "none";
+                    document.getElementById(`report-form-${id}`).style.display = 'none';
+                }, 2000);
+            } catch (error) {
+                alert("Fehler beim Senden: " + error.message);
+            }
+        };
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                tabButtons.forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentTab = e.target.getAttribute('data-cat');
+                filterAndRender();
+            });
+        });
+
+        searchInput.addEventListener('input', () => {
+            filterAndRender();
         });
 
         loadApprovedSubmissions();
