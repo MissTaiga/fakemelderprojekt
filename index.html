@@ -54,8 +54,8 @@
 
     <div class="tabs">
         <button class="tab-btn active" data-cat="all">Alle</button>
-        <button class="tab-btn" data-cat="Dom">Dom</button>
-        <button class="tab-btn" data-cat="Sub">Sub</button>
+        <button class="tab-btn" data-cat="dom">Dom</button>
+        <button class="tab-btn" data-cat="sub">Sub</button>
     </div>
     
     <input type="text" id="search" placeholder="Nach Benutzernamen suchen...">
@@ -102,7 +102,10 @@
             const searchTerm = searchInput.value.toLowerCase().trim();
 
             let filtered = allSubmissions.filter(item => {
-                const matchesTab = (currentTab === "all" || item.mainCategory === currentTab);
+                // Hauptkategorie auslesen, falls nicht vorhanden standardmäßig "Dom" annehmen
+                const itemCat = (item.mainCategory || "Dom").toLowerCase().trim();
+                const matchesTab = (currentTab === "all" || itemCat === currentTab);
+                
                 const matchesSearch = item.username.toLowerCase().includes(searchTerm);
                 return matchesTab && matchesSearch;
             });
@@ -116,7 +119,7 @@
                 
                 if (searchTerm !== "") {
                     missingTermSpan.textContent = searchTerm;
-                    const activeCatForSubmit = currentTab === "all" ? "Dom" : currentTab;
+                    const activeCatForSubmit = currentTab === "all" ? "Dom" : (currentTab === "dom" ? "Dom" : "Sub");
                     missingCatText.textContent = `(${activeCatForSubmit})`;
                     submitLink.href = `submit.html?username=${encodeURIComponent(searchTerm)}&cat=${activeCatForSubmit}`;
                     notFoundContainer.style.display = "block";
@@ -133,6 +136,16 @@
                 if (cat === "Zeitverschwendung" || cat === "nicht Echt") badgeClass = "bg-zeitverschwendung";
                 if (cat === "Echt") badgeClass = "bg-echt";
 
+                // Erster Link im Array oder direkter String als Fallback
+                let profileUrl = "#";
+                if (Array.isArray(item.profileLinks) && item.profileLinks.length > 0) {
+                    profileUrl = item.profileLinks[0];
+                } else if (typeof item.profileLinks === "string") {
+                    profileUrl = item.profileLinks;
+                } else if (item.profileLink) {
+                    profileUrl = item.profileLink;
+                }
+
                 return `
                     <div class="card">
                         <div>
@@ -140,7 +153,7 @@
                             <h3>${item.username}</h3>
                             <div><span class="badge ${badgeClass}">${cat}</span></div>
                             <br>
-                            <a href="${item.profileLinks[0]}" target="_blank" class="profile-link">Zum Profil</a>
+                            <a href="${profileUrl}" target="_blank" class="profile-link">Zum Profil</a>
                         </div>
                         
                         <div class="report-section">
