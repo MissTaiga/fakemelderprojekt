@@ -55,7 +55,6 @@
 
         async function loadAdminData() {
             try {
-                // Nach Datum sortieren (neueste zuerst)
                 const q = query(collection(db, "submissions"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
                 
@@ -71,17 +70,17 @@
                     const category = data.category || 'ungeprüft';
                     const links = data.profileLinks ? data.profileLinks.join(', ') : '';
 
-                    // Melde-Kommentare nach Datum sortieren (neueste zuerst)
                     let reportsHTML = "";
                     if (data.reports && data.reports.length > 0) {
-                        const sortedReports = [...data.reports].sort((a, b => new Date(b.createdAt) - new Date(a.createdAt)));
+                        // Korrigierte Sortierung (neueste Berichte zuerst)
+                        const sortedReports = [...data.reports].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                         reportsHTML = `
                             <div class="reports-box">
                                 <h4>⚠️ Anmerkungen / Meldungen (${sortedReports.length}):</h4>
                                 ${sortedReports.map(r => `
                                     <div class="report-item">
                                         <span>${r.message}</span>
-                                        <span class="report-date">${new Date(r.createdAt).toLocaleString('de-DE')}</span>
+                                        <span class="report-date">${r.createdAt ? new Date(r.createdAt).toLocaleString('de-DE') : ''}</span>
                                     </div>
                                 `).join('')}
                             </div>
@@ -147,7 +146,6 @@
             }
         }
 
-        // Globale Funktionen für die Admin-Aktionen
         window.updateStatus = async function(id, newStatus) {
             try {
                 const docRef = doc(db, "submissions", id);
@@ -177,7 +175,7 @@
         };
 
         window.deleteSubmission = async function(id) {
-            if (confirm("Mistest du diesen Eintrag wirklich unwiderruflich löschen?")) {
+            if (confirm("Möchtest du diesen Eintrag wirklich unwiderruflich löschen?")) {
                 try {
                     await deleteDoc(doc(db, "submissions", id));
                     loadAdminData();
