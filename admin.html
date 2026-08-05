@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Moderation</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
+        .admin-card { border: 1px solid #ff9800; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #fffdf5; }
+        .admin-card img { max-width: 150px; display: block; margin-bottom: 10px; }
+        input, button { padding: 8px; margin-right: 5px; }
+        #loginSection, #adminSection { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Login Formular -->
+    <div id="loginSection">
+        <h2>Admin Login</h2>
+        <input type="email" id="email" placeholder="E-Mail"><br><br>
+        <input type="password" id="password" placeholder="Passwort"><br><br>
+        <button id="loginBtn">Einloggen</button>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminSection">
+        <h2>Offene Einsendungen zur Prüfung</h2>
+        <button id="logoutBtn" style="float: right;">Abmelden</button>
+        <div id="pendingList">Lade offene Einsendungen...</div>
+    </div>
+
+    <script type="module">
+        import { auth, db, collection, getDocs, doc, updateDoc, query, where, signInWithEmailAndPassword, onAuthStateChanged, signOut } from './app.js';
+
+        const loginSection = document.getElementById('loginSection');
+        const adminSection = document.getElementById('adminSection');
+        const pendingList = document.getElementById('pendingList');
+
+        // Auth Status prüfen
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                loginSection.style.display = 'none';
+                adminSection.style.display = 'block';
+                loadPendingSubmissions();
+            } else {
+                loginSection.style.display = 'block';
+                adminSection.style.display = 'none';
+            }
+        });
+
+        // Login ausführen
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                alert("Login fehlgeschlagen: " + error.message);
+            }
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+
+        // Offene Einträge laden
+        async function loadPendingSubmissions() {
+            try {
+                const q = query(collection(db, "submissions"), where("status", "==", "pending"));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    pendingList.innerHTML = "<p>Keine offenen Einsendungen vorhanden.</p>";
+                    return;
+                }
+
+                let html = '';
+                querySnapshot.forEach((document) => {
+                    const data = document.data();
+                    html += `
+                        <div class="admin-card" id="card-${document.id}">
+                            <img src="${data.imageUrl}" alt="">
+                            <h3>${data.username}</h3>
+                            <p><a href="${data.profileLinks[0]}" target="_blank">Profil-Link öffnen</a></p>
+                            <label>Bewertung (z.B. Punkte):</label>
+                            <input type="number" id="rating-${document.id}" placeholder="z.B. 8.5">
+                            <button onclick="window.approveItem('${document.id}')" style="background: green; color: white;">Freigeben</button>
+                            <button onclick="window.rejectItem('${document.id}')" style="background: red; color: white;">Ablehnen</button>
+                        </div>
+                    `;
+                });
+                pendingList.innerHTML = html;
+            } catch (error) {
+                pendingList.textContent = "Fehler beim Laden.";
+                console.error(error);
+            }
+        }
+
+        // Global machen für die onclick-Buttons
+        window.approveItem = async function(id) {
+            const ratingInput = document.getElementById(`rating-${id}`).value;
+            const rating = ratingInput ? parseFloat(ratingInput) : 0;
+
+            try {
+                const docRef = doc(db, "submissions", id);
+                await updateDoc(docRef, {
+                    status: "approved",
+                    rating: rating
+                });
+                document.getElementById(`card-${id}`).remove();
+                alert("Erfolgreich freigegeben!");
+            } catch (error) {
+                alert("Fehler: " + error.message);
+            }
+        }
+
+        window.rejectItem = async function(id) {
+            try {
+                const docRef = doc(db, "submissions", id);
+                await updateDoc(docRef, {
+                    status: "rejected"
+                });
+                document.getElementById(`card-${id}`).remove();
+                alert("Eintrag abgelehnt.");
+            } catch (error) {
+                alert("Fehler: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Community Rankings</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+        #search { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; text-align: center; background: #f9f9f9; }
+        .card img { max-width: 100%; height: 150px; object-fit: cover; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <h1>Community Rankings</h1>
+    <input type="text" id="search" placeholder="Nach Benutzernamen suchen...">
+
+    <div id="gallery" class="grid">Lade Einträge...</div>
+
+    <script type="module">
+        import { db, collection, getDocs, query, where } from './app.js';
+
+        let allSubmissions = [];
+        const gallery = document.getElementById('gallery');
+        const searchInput = document.getElementById('search');
+
+        async function loadApprovedSubmissions() {
+            try {
+                const q = query(collection(db, "submissions"), where("status", "==", "approved"));
+                const querySnapshot = await getDocs(q);
+                
+                allSubmissions = [];
+                querySnapshot.forEach((doc) => {
+                    allSubmissions.push({ id: doc.id, ...doc.data() });
+                });
+
+                renderGallery(allSubmissions);
+            } catch (error) {
+                gallery.textContent = "Fehler beim Laden der Daten.";
+                console.error(error);
+            }
+        }
+
+        function renderGallery(items) {
+            if (items.length === 0) {
+                gallery.innerHTML = "<p>Keine Einträge gefunden.</p>";
+                return;
+            }
+
+            gallery.innerHTML = items.map(item => `
+                <div class="card">
+                    <img src="${item.imageUrl}" alt="${item.username}">
+                    <h3>${item.username}</h3>
+                    <p><strong>Bewertung:</strong> ${item.rating ? item.rating + ' Punkte' : 'Ausstehend'}</p>
+                    <a href="${item.profileLinks[0]}" target="_blank">Zum Profil</a>
+                </div>
+            `).join('');
+        }
+
+        // Live-Suche
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allSubmissions.filter(item => 
+                item.username.toLowerCase().includes(term)
+            );
+            renderGallery(filtered);
+        });
+
+        loadApprovedSubmissions();
+    </script>
+</body>
+</html>
