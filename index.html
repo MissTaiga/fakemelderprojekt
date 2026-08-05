@@ -37,8 +37,8 @@
         .report-toggle { background: none; border: none; color: #666; cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; display: block; width: 100%; text-align: center; margin-bottom: 5px; }
         .report-form { display: none; margin-top: 5px; }
         .report-form textarea { width: 100%; height: 50px; font-size: 12px; padding: 5px; box-sizing: border-box; resize: none; border: 1px solid #ccc; border-radius: 4px; }
-        .report-form button { background: #6c757d; color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 3px; cursor: pointer; margin-top: 4px; width: 100%; }
-        .report-form button:hover { background: #5a6268; }
+        .report-send-btn { background: #6c757d; color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 3px; cursor: pointer; margin-top: 4px; width: 100%; }
+        .report-send-btn:hover { background: #5a6268; }
         .char-count { font-size: 10px; color: #888; text-align: right; display: block; }
         .report-msg { font-size: 11px; color: #28a745; text-align: center; margin-top: 3px; font-weight: bold; display: none; }
     </style>
@@ -143,61 +143,78 @@
                         </div>
                         
                         <div class="report-section">
-                            <button class="report-toggle" onclick="toggleReportForm('${item.id}')">Anmerkung / Melden</button>
+                            <button class="report-toggle" data-id="${item.id}">Anmerkung / Melden</button>
                             <div id="report-form-${item.id}" class="report-form">
-                                <textarea id="report-text-${item.id}" maxlength="180" placeholder="Max. 180 Zeichen..." oninput="updateCharCount('${item.id}')"></textarea>
+                                <textarea id="report-text-${item.id}" maxlength="180" placeholder="Max. 180 Zeichen..."></textarea>
                                 <span id="char-count-${item.id}" class="char-count">180 Zeichen übrig</span>
-                                <button onclick="sendReport('${item.id}')">Absenden</button>
+                                <button class="report-send-btn" data-id="${item.id}">Absenden</button>
                                 <div id="report-msg-${item.id}" class="report-msg">Gesendet!</div>
                             </div>
                         </div>
                     </div>
                 `;
             }).join('');
+
+            attachCardEventListeners();
         }
 
-        window.toggleReportForm = function(id) {
-            const form = document.getElementById(`report-form-${id}`);
-            form.style.display = form.style.display === 'block' ? 'none' : 'block';
-        };
-
-        window.updateCharCount = function(id) {
-            const textarea = document.getElementById(`report-text-${id}`);
-            const countSpan = document.getElementById(`char-count-${id}`);
-            const remaining = 180 - textarea.value.length;
-            countSpan.textContent = `${remaining} Zeichen übrig`;
-        };
-
-        window.sendReport = async function(id) {
-            const textarea = document.getElementById(`report-text-${id}`);
-            const msgDiv = document.getElementById(`report-msg-${id}`);
-            const text = textarea.value.trim();
-
-            if (!text) {
-                alert("Bitte gib eine Nachricht ein.");
-                return;
-            }
-
-            try {
-                const docRef = doc(db, "submissions", id);
-                await updateDoc(docRef, {
-                    reports: arrayUnion({
-                        message: text,
-                        createdAt: new Date().toISOString()
-                    })
+        // Event-Listener dynamisch an die Kartenelemente binden (verhindert Modul-Scope-Fehler)
+        function attachCardEventListeners() {
+            // Melden-Formular ein-/ausblenden
+            document.querySelectorAll('.report-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const form = document.getElementById(`report-form-${id}`);
+                    form.style.display = form.style.display === 'block' ? 'none' : 'block';
                 });
+            });
 
-                msgDiv.style.display = "block";
-                textarea.value = "";
-                setTimeout(() => {
-                    msgDiv.style.display = "none";
-                    document.getElementById(`report-form-${id}`).style.display = 'none';
-                }, 2000);
-            } catch (error) {
-                alert("Fehler beim Senden: " + error.message);
-            }
-        };
+            // Zeichenzähler live aktualisieren
+            document.querySelectorAll('.report-form textarea').forEach(textarea => {
+                textarea.addEventListener('input', (e) => {
+                    const id = e.target.id.replace('report-text-', '');
+                    const countSpan = document.getElementById(`char-count-${id}`);
+                    const remaining = 180 - e.target.value.length;
+                    countSpan.textContent = `${remaining} Zeichen übrig`;
+                });
+            });
 
+            // Nachricht absenden
+            document.querySelectorAll('.report-send-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const textarea = document.getElementById(`report-text-${id}`);
+                    const msgDiv = document.getElementById(`report-msg-${id}`);
+                    const text = textarea.value.trim();
+
+                    if (!text) {
+                        alert("Bitte gib eine Nachricht ein.");
+                        return;
+                    }
+
+                    try {
+                        const docRef = doc(db, "submissions", id);
+                        await updateDoc(docRef, {
+                            reports: arrayUnion({
+                                message: text,
+                                createdAt: new Date().toISOString()
+                            })
+                        });
+
+                        msgDiv.style.display = "block";
+                        textarea.value = "";
+                        setTimeout(() => {
+                            msgDiv.style.display = "none";
+                            document.getElementById(`report-form-${id}`).style.display = 'none';
+                        }, 2000);
+                    } catch (error) {
+                        alert("Fehler beim Senden: " + error.message);
+                    }
+                });
+            });
+        }
+
+        // Tab-Klicks verarbeiten
         tabButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 tabButtons.forEach(b => b.classList.remove('active'));
@@ -207,6 +224,7 @@
             });
         });
 
+        // Live-Suche
         searchInput.addEventListener('input', () => {
             filterAndRender();
         });
