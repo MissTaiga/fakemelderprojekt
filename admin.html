@@ -26,6 +26,10 @@
         .btn-delete { background: #343a40; color: white; border: none; }
         .btn-delete:hover { background: #23272b; }
 
+        .image-preview { margin-top: 10px; }
+        .image-preview img { max-width: 150px; max-height: 150px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; object-fit: cover; }
+        .image-preview img:hover { opacity: 0.8; }
+
         .reports-box { margin-top: 15px; background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 5px; font-size: 13px; }
         .reports-box h4 { margin: 0 0 8px 0; color: #856404; }
         .report-item { background: #fff; padding: 6px 10px; margin-bottom: 6px; border-radius: 4px; border-left: 3px solid #ffc107; display: flex; justify-content: space-between; align-items: center; }
@@ -70,9 +74,22 @@
                     const category = data.category || 'ungeprüft';
                     const links = data.profileLinks ? data.profileLinks.join(', ') : '';
 
+                    // Bild-Anzeige unterstützen (egal ob imageUrl oder image gespeichert wurde)
+                    const imageSrc = data.imageUrl || data.image || "";
+                    let imageHTML = "";
+                    if (imageSrc) {
+                        imageHTML = `
+                            <div class="image-preview">
+                                <p><strong>Hochgeladenes Bild:</strong></p>
+                                <a href="${imageSrc}" target="_blank">
+                                    <img src="${imageSrc}" alt="Upload Vorschau">
+                                </a>
+                            </div>
+                        `;
+                    }
+
                     let reportsHTML = "";
                     if (data.reports && data.reports.length > 0) {
-                        // Korrigierte Sortierung (neueste Berichte zuerst)
                         const sortedReports = [...data.reports].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                         reportsHTML = `
                             <div class="reports-box">
@@ -97,6 +114,7 @@
                                 </div>
                                 <p><strong>Haupt-Kategorie:</strong> ${mainCat} | <strong>Status-Kategorie:</strong> ${category}</p>
                                 <p><strong>Links:</strong> <a href="${links}" target="_blank">${links}</a></p>
+                                ${imageHTML}
                                 
                                 <div class="actions">
                                     <button class="btn-approve" onclick="updateStatus('${id}', 'approved')">Freigeben</button>
@@ -113,6 +131,7 @@
                                     <span>Erstellt: ${data.createdAt ? new Date(data.createdAt).toLocaleString('de-DE') : 'Unbekannt'}</span>
                                 </div>
                                 <p><strong>Links:</strong> <a href="${links}" target="_blank">${links}</a></p>
+                                ${imageHTML}
                                 
                                 <div class="actions">
                                     <label>Haupt-Kategorie:</label>
