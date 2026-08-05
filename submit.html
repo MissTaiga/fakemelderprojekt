@@ -4,21 +4,35 @@
     <meta charset="UTF-8">
     <title>Profil einreichen</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; }
-        input, button { display: block; width: 100%; margin-bottom: 15px; padding: 10px; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; background: #fdfbf7; color: #333; }
+        .nav-back { margin-bottom: 20px; }
+        .btn-back { display: inline-block; padding: 8px 15px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; font-size: 14px; font-weight: bold; }
+        .btn-back:hover { background: #5a6268; }
+        form { background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; }
+        label { display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; }
+        input, button { display: block; width: 100%; margin-bottom: 15px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #28a745; color: white; font-weight: bold; border: none; cursor: pointer; }
+        button:hover { background: #218838; }
+        button:disabled { background: #94d3a2; cursor: not-allowed; }
+        #statusMsg { font-weight: bold; text-align: center; margin-top: 15px; }
     </style>
 </head>
 <body>
 
+    <!-- Zurück-Button zur Startseite -->
+    <div class="nav-back">
+        <a href="index.html" class="btn-back">← Zurück zur Startseite</a>
+    </div>
+
     <h1>Profil / Datei einreichen</h1>
     <form id="submitForm">
-        <label>Benutzername:</label>
+        <label for="username">Benutzername:</label>
         <input type="text" id="username" required>
 
-        <label>Profil-Link (z.B. Social Media):</label>
+        <label for="profileLink">Profil-Link (z.B. Social Media):</label>
         <input type="url" id="profileLink" required>
 
-        <label>Bilddatei:</label>
+        <label for="imageFile">Bilddatei:</label>
         <input type="file" id="imageFile" accept="image/*" required>
 
         <button type="submit" id="submitBtn">Absenden</button>
@@ -46,6 +60,7 @@
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             statusMsg.textContent = "Wird verarbeitet...";
+            statusMsg.style.color = "#333";
 
             try {
                 const username = document.getElementById('username').value;
@@ -56,24 +71,26 @@
                     throw new Error("Bitte wähle eine Bilddatei aus.");
                 }
 
-                // 1. Bild direkt im Browser in Base64 umwandeln
+                // 1. Bild im Browser in Base64 umwandeln
                 const base64Image = await convertFileToBase64(fileInput);
 
                 // 2. Daten direkt in Firestore speichern (Status: pending)
                 await addDoc(collection(db, "submissions"), {
                     username: username,
                     profileLinks: [profileLink],
-                    imageUrl: base64Image, // Hier speichern wir den Bild-Code direkt
+                    imageUrl: base64Image,
                     status: "pending",
                     rating: null,
                     createdAt: serverTimestamp()
                 });
 
                 statusMsg.textContent = "Erfolgreich eingereicht! Wartet auf Freigabe.";
+                statusMsg.style.color = "#28a745";
                 form.reset();
             } catch (error) {
                 console.error("Fehler:", error);
                 statusMsg.textContent = "Fehler beim Einreichen: " + error.message;
+                statusMsg.style.color = "#dc3545";
             } finally {
                 submitBtn.disabled = false;
             }
