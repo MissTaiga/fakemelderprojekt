@@ -122,10 +122,7 @@
                                 <option value="Echt">Echt</option>
                                 <option value="nicht Echt">nicht Echt</option>
                                 <option value="Zeitverschwendung">Zeitverschwendung</option>
-                            </select><br>
-
-                            <label>Bewertung (Punkte):</label>
-                            <input type="number" id="rating-${document.id}" placeholder="z.B. 8.5"><br>
+                            </select><br><br>
 
                             <button class="btn-approve" onclick="window.approveItem('${document.id}')">Freigeben</button>
                             <button class="btn-delete" onclick="window.deleteItem('${document.id}')">Löschen</button>
@@ -166,7 +163,6 @@
                             <img src="${data.imageUrl}" alt="">
                             <h3>${data.username}</h3>
                             <p><strong>Kategorie:</strong> <span class="badge ${badgeClass}">${cat}</span></p>
-                            <p><strong>Bewertung:</strong> ${data.rating !== null && data.rating !== undefined ? data.rating + ' Punkte' : 'Keine'}</p>
                             <button class="btn-delete" onclick="window.deleteItem('${document.id}')">Eintrag unwiderruflich löschen</button>
                         </div>
                     `;
@@ -181,15 +177,12 @@
         // Funktion: Freigeben mit Kategorie
         window.approveItem = async function(id) {
             const category = document.getElementById(`category-${id}`).value;
-            const ratingInput = document.getElementById(`rating-${id}`).value;
-            const rating = ratingInput ? parseFloat(ratingInput) : 0;
 
             try {
                 const docRef = doc(db, "submissions", id);
                 await updateDoc(docRef, {
                     status: "approved",
-                    category: category,
-                    rating: rating
+                    category: category
                 });
                 alert("Erfolgreich freigegeben!");
                 loadAllSubmissions();
