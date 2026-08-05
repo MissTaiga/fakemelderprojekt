@@ -4,21 +4,27 @@
     <meta charset="UTF-8">
     <title>Community Rankings</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
-        #search { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #fdfbf7; color: #333; }
+        .nav-links { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .btn-primary { display: inline-block; padding: 10px 20px; background: #0066cc; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .btn-primary:hover { background: #0051a2; }
+        .admin-link { color: #666; text-decoration: none; font-size: 14px; }
+        .admin-link:hover { text-decoration: underline; }
+        #search { width: 100%; padding: 12px; font-size: 16px; margin-bottom: 25px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-        .card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; text-align: center; background: #f9f9f9; }
-        .card img { max-width: 100%; height: 150px; object-fit: cover; border-radius: 4px; }
-        .nav-links { margin-bottom: 20px; }
-        .nav-links a { margin-right: 15px; text-decoration: none; color: #0066cc; font-weight: bold; }
+        .card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; text-align: center; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card img { max-width: 100%; height: 150px; object-fit: cover; border-radius: 4px; margin-bottom: 10px; }
+        .card h3 { margin: 10px 0 5px 0; }
+        .card a { color: #0066cc; text-decoration: none; }
+        .card a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 
+    <!-- Navigationsleiste oben -->
     <div class="nav-links">
-        <a href="index.html">Startseite / Galerie</a>
-        <a href="submit.html">Profil einreichen</a>
-        <a href="admin.html">Admin-Bereich</a>
+        <a href="submit.html" class="btn-primary">+ Neues Profil einreichen</a>
+        <a href="admin.html" class="admin-link">Admin-Bereich ⚙️</a>
     </div>
 
     <h1>Community Rankings</h1>
@@ -60,7 +66,7 @@
                 <div class="card">
                     <img src="${item.imageUrl}" alt="${item.username}">
                     <h3>${item.username}</h3>
-                    <p><strong>Bewertung:</strong> ${item.rating ? item.rating + ' Punkte' : 'Ausstehend'}</p>
+                    <p><strong>Bewertung:</strong> ${item.rating !== null && item.rating !== undefined ? item.rating + ' Punkte' : 'Ausstehend'}</p>
                     <a href="${item.profileLinks[0]}" target="_blank">Zum Profil</a>
                 </div>
             `).join('');
