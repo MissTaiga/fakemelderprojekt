@@ -9,9 +9,17 @@
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
         .card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; text-align: center; background: #f9f9f9; }
         .card img { max-width: 100%; height: 150px; object-fit: cover; border-radius: 4px; }
+        .nav-links { margin-bottom: 20px; }
+        .nav-links a { margin-right: 15px; text-decoration: none; color: #0066cc; font-weight: bold; }
     </style>
 </head>
 <body>
+
+    <div class="nav-links">
+        <a href="index.html">Startseite / Galerie</a>
+        <a href="submit.html">Profil einreichen</a>
+        <a href="admin.html">Admin-Bereich</a>
+    </div>
 
     <h1>Community Rankings</h1>
     <input type="text" id="search" placeholder="Nach Benutzernamen suchen...">
@@ -44,7 +52,7 @@
 
         function renderGallery(items) {
             if (items.length === 0) {
-                gallery.innerHTML = "<p>Keine Einträge gefunden.</p>";
+                gallery.innerHTML = "<p>Keine freigegebenen Einträge gefunden.</p>";
                 return;
             }
 
