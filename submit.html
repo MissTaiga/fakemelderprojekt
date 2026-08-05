@@ -10,7 +10,7 @@
         .btn-back:hover { background: #5a6268; }
         form { background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; }
         label { display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; }
-        input, button { display: block; width: 100%; margin-bottom: 15px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        input, select, button { display: block; width: 100%; margin-bottom: 15px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         button { background: #28a745; color: white; font-weight: bold; border: none; cursor: pointer; }
         button:hover { background: #218838; }
         button:disabled { background: #94d3a2; cursor: not-allowed; }
@@ -19,13 +19,18 @@
 </head>
 <body>
 
-    <!-- Zurück-Button zur Startseite -->
     <div class="nav-back">
         <a href="index.html" class="btn-back">← Zurück zur Startseite</a>
     </div>
 
-    <h1>Profil / Datei einreichen</h1>
+    <h1>Profil einreichen</h1>
     <form id="submitForm">
+        <label for="mainCategory">Hauptkategorie:</label>
+        <select id="mainCategory" required>
+            <option value="Dom">Dom</option>
+            <option value="Sub">Sub</option>
+        </select>
+
         <label for="username">Benutzername:</label>
         <input type="text" id="username" required>
 
@@ -42,17 +47,20 @@
     <script type="module">
         import { db, collection, addDoc, serverTimestamp } from './app.js';
 
-        // Automatisch Benutzernamen aus der URL übernehmen (falls über die Suche gekommen)
         const urlParams = new URLSearchParams(window.location.search);
         const prefilledUsername = urlParams.get('username');
+        const prefilledCategory = urlParams.get('cat');
+        
         if (prefilledUsername) {
             document.getElementById('username').value = prefilledUsername;
+        }
+        if (prefilledCategory && (prefilledCategory === 'Dom' || prefilledCategory === 'Sub')) {
+            document.getElementById('mainCategory').value = prefilledCategory;
         }
 
         const form = document.getElementById('submitForm');
         const statusMsg = document.getElementById('statusMsg');
 
-        // Hilfsfunktion: Konvertiert das Bild in einen Base64-Textstring
         function convertFileToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -70,23 +78,24 @@
             statusMsg.style.color = "#333";
 
             try {
+                const mainCategory = document.getElementById('mainCategory').value;
                 const username = document.getElementById('username').value;
                 const profileLink = document.getElementById('profileLink').value;
                 const fileInput = document.getElementById('imageFile').files[0];
 
                 let base64Image = null;
-                // Wenn eine Datei ausgewählt wurde, diese konvertieren
                 if (fileInput) {
                     base64Image = await convertFileToBase64(fileInput);
                 }
 
-                // Daten in Firestore speichern (Status: pending)
                 await addDoc(collection(db, "submissions"), {
+                    mainCategory: mainCategory,
                     username: username,
                     profileLinks: [profileLink],
                     imageUrl: base64Image,
                     status: "pending",
                     category: "ungeprüft",
+                    reports: [], // Initial leeres Array für Meldungen
                     createdAt: serverTimestamp()
                 });
 
