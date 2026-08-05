@@ -32,8 +32,8 @@
         <label for="profileLink">Profil-Link (z.B. Social Media):</label>
         <input type="url" id="profileLink" required>
 
-        <label for="imageFile">Bilddatei:</label>
-        <input type="file" id="imageFile" accept="image/*" required>
+        <label for="imageFile">Bilddatei (optional):</label>
+        <input type="file" id="imageFile" accept="image/*">
 
         <button type="submit" id="submitBtn">Absenden</button>
     </form>
@@ -74,20 +74,18 @@
                 const profileLink = document.getElementById('profileLink').value;
                 const fileInput = document.getElementById('imageFile').files[0];
 
-                if (!fileInput) {
-                    throw new Error("Bitte wähle eine Bilddatei aus.");
+                let base64Image = null;
+                // Wenn eine Datei ausgewählt wurde, diese konvertieren
+                if (fileInput) {
+                    base64Image = await convertFileToBase64(fileInput);
                 }
 
-                // 1. Bild im Browser in Base64 umwandeln
-                const base64Image = await convertFileToBase64(fileInput);
-
-                // 2. Daten direkt in Firestore speichern (Status: pending)
+                // Daten in Firestore speichern (Status: pending)
                 await addDoc(collection(db, "submissions"), {
                     username: username,
                     profileLinks: [profileLink],
                     imageUrl: base64Image,
                     status: "pending",
-                    rating: null,
                     category: "ungeprüft",
                     createdAt: serverTimestamp()
                 });
