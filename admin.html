@@ -2,242 +2,192 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Moderation & Verwaltung</title>
+    <title>Admin-Bereich - Community Rankings</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; background: #fdfbf7; color: #333; }
-        .nav-back { margin-bottom: 20px; }
-        .btn-back { display: inline-block; padding: 8px 15px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; font-size: 14px; font-weight: bold; }
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; background: #fdfbf7; color: #333; }
+        .nav-links { margin-bottom: 25px; }
+        .btn-back { display: inline-block; padding: 8px 16px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
         .btn-back:hover { background: #5a6268; }
-        .admin-card { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #fffdf5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .admin-card img { max-width: 120px; display: block; margin-bottom: 10px; border-radius: 4px; }
-        input, select, button { padding: 8px; margin-right: 5px; margin-bottom: 10px; }
-        .btn-approve { background: #28a745; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        .btn-update { background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        .btn-delete { background: #dc3545; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
+
+        h2 { border-bottom: 2px solid #ddd; padding-bottom: 8px; margin-top: 40px; }
         
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 12px; }
-        .bg-zeitverschwendung { background: #dc3545; }
-        .bg-ungeprueft { background: #fd7e14; }
-        .bg-echt { background: #28a745; }
-        .bg-nicht-echt { background: #dc3545; }
+        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .card h3 { margin: 0; }
+        
+        .actions { display: flex; gap: 10px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+        select, button { padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; }
+        button { cursor: pointer; font-weight: bold; }
+        
+        .btn-approve { background: #28a745; color: white; border: none; }
+        .btn-approve:hover { background: #218838; }
+        .btn-reject { background: #dc3545; color: white; border: none; }
+        .btn-reject:hover { background: #c82333; }
+        .btn-delete { background: #343a40; color: white; border: none; }
+        .btn-delete:hover { background: #23272b; }
 
-        /* Admin-Meldungsbox */
-        .reports-box { margin-top: 10px; padding: 8px; background: #ffeeba; border: 1px solid #ffdf7e; border-radius: 4px; font-size: 13px; }
-        .reports-box ul { margin: 5px 0 0 15px; padding: 0; }
-        .reports-box li { margin-bottom: 4px; }
-
-        #loginSection, #adminSection { display: none; }
-        .section-title { margin-top: 30px; border-bottom: 2px solid #333; padding-bottom: 5px; }
-        #loadingAuth { text-align: center; font-weight: bold; color: #666; margin-top: 50px; }
+        .reports-box { margin-top: 15px; background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 5px; font-size: 13px; }
+        .reports-box h4 { margin: 0 0 8px 0; color: #856404; }
+        .report-item { background: #fff; padding: 6px 10px; margin-bottom: 6px; border-radius: 4px; border-left: 3px solid #ffc107; display: flex; justify-content: space-between; align-items: center; }
+        .report-date { font-size: 11px; color: #666; margin-left: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="nav-back">
+    <div class="nav-links">
         <a href="index.html" class="btn-back">← Zurück zur Startseite</a>
     </div>
 
-    <div id="loadingAuth">Überprüfe Anmelde-Status...</div>
+    <h1>Admin-Bereich ⚙️</h1>
 
-    <div id="loginSection">
-        <h2>Admin Login</h2>
-        <input type="email" id="email" placeholder="E-Mail"><br><br>
-        <input type="password" id="password" placeholder="Passwort"><br><br>
-        <button id="loginBtn" class="btn-approve" style="padding: 10px 20px;">Einloggen</button>
-        <p id="loginError" style="color: red; font-weight: bold;"></p>
-    </div>
+    <h2>Ausstehende Anträge</h2>
+    <div id="pendingList">Lade ausstehende Anträge...</div>
 
-    <div id="adminSection">
-        <button id="logoutBtn" class="btn-delete" style="float: right;">Abmelden</button>
-        <h1>Admin Dashboard</h1>
-
-        <h2 class="section-title">Offene Einsendungen zur Prüfung</h2>
-        <div id="pendingList">Lade offene Einsendungen...</div>
-
-        <h2 class="section-title">Bereits veröffentlichte Einträge</h2>
-        <div id="approvedList">Lade veröffentlichte Einträge...</div>
-    </div>
+    <h2>Freigegebene Einträge</h2>
+    <div id="approvedList">Lade freigegebene Einträge...</div>
 
     <script type="module">
-        import { auth, db, collection, getDocs, doc, updateDoc, deleteDoc, query, where, signInWithEmailAndPassword, onAuthStateChanged, signOut } from './app.js';
+        import { db } from './app.js';
+        import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        const loadingAuth = document.getElementById('loadingAuth');
-        const loginSection = document.getElementById('loginSection');
-        const adminSection = document.getElementById('adminSection');
-        const loginError = document.getElementById('loginError');
+        const pendingList = document.getElementById('pendingList');
+        const approvedList = document.getElementById('approvedList');
 
-        onAuthStateChanged(auth, (user) => {
-            loadingAuth.style.display = 'none';
-            if (user) {
-                loginSection.style.display = 'none';
-                adminSection.style.display = 'block';
-                loadAllSubmissions();
-            } else {
-                loginSection.style.display = 'block';
-                adminSection.style.display = 'none';
-            }
-        });
-
-        document.getElementById('loginBtn').addEventListener('click', async () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            loginError.textContent = "";
-
+        async function loadAdminData() {
             try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                loginError.textContent = "Login fehlgeschlagen: " + error.message;
-            }
-        });
-
-        document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
-
-        async function loadAllSubmissions() {
-            loadPending();
-            loadApproved();
-        }
-
-        // Hilfsfunktion zum Generieren des Melde-HTMLs für den Admin
-        function renderReportsHtml(reports) {
-            if (!reports || reports.length === 0) return '';
-            
-            let listItems = reports.map(r => {
-                const dateStr = new Date(r.createdAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
-                return `<li><strong>[${dateStr}]</strong>: ${r.message}</li>`;
-            }).join('');
-
-            return `
-                <div class="reports-box">
-                    <strong>⚠️ Nutzer-Meldungen / Anmerkungen (${reports.length}):</strong>
-                    <ul>${listItems}</ul>
-                </div>
-            `;
-        }
-
-        async function loadPending() {
-            const pendingList = document.getElementById('pendingList');
-            try {
-                const q = query(collection(db, "submissions"), where("status", "==", "pending"));
+                // Nach Datum sortieren (neueste zuerst)
+                const q = query(collection(db, "submissions"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
+                
+                let pendingHTML = "";
+                let approvedHTML = "";
+                let hasPending = false;
+                let hasApproved = false;
 
-                if (querySnapshot.empty) {
-                    pendingList.innerHTML = "<p>Keine offenen Einsendungen vorhanden.</p>";
-                    return;
-                }
+                querySnapshot.forEach((docItem) => {
+                    const data = docItem.data();
+                    const id = docItem.id;
+                    const mainCat = data.mainCategory || 'Dom';
+                    const category = data.category || 'ungeprüft';
+                    const links = data.profileLinks ? data.profileLinks.join(', ') : '';
 
-                let html = '';
-                querySnapshot.forEach((document) => {
-                    const data = document.data();
-                    const imageHtml = data.imageUrl ? `<img src="${data.imageUrl}" alt="Bild">` : '<p style="color: #888; font-style: italic;">Kein Bild hochgeladen</p>';
-                    const reportsHtml = renderReportsHtml(data.reports);
+                    // Melde-Kommentare nach Datum sortieren (neueste zuerst)
+                    let reportsHTML = "";
+                    if (data.reports && data.reports.length > 0) {
+                        const sortedReports = [...data.reports].sort((a, b => new Date(b.createdAt) - new Date(a.createdAt)));
+                        reportsHTML = `
+                            <div class="reports-box">
+                                <h4>⚠️ Anmerkungen / Meldungen (${sortedReports.length}):</h4>
+                                ${sortedReports.map(r => `
+                                    <div class="report-item">
+                                        <span>${r.message}</span>
+                                        <span class="report-date">${new Date(r.createdAt).toLocaleString('de-DE')}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
 
-                    html += `
-                        <div class="admin-card" id="card-${document.id}">
-                            ${imageHtml}
-                            <p><strong>Hauptkategorie:</strong> ${data.mainCategory || 'Dom'}</p>
-                            <h3>${data.username}</h3>
-                            <p><a href="${data.profileLinks[0]}" target="_blank">Profil-Link öffnen</a></p>
-                            ${reportsHtml}
-                            <br>
-                            <label><strong>Kategorie wählen:</strong></label><br>
-                            <select id="category-${document.id}">
-                                <option value="ungeprüft">ungeprüft</option>
-                                <option value="Echt">Echt</option>
-                                <option value="nicht Echt">nicht Echt</option>
-                                <option value="Zeitverschwendung">Zeitverschwendung</option>
-                            </select><br><br>
+                    if (data.status === "pending") {
+                        hasPending = true;
+                        pendingHTML += `
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3>${data.username}</h3>
+                                    <span>Eingereicht am: ${data.createdAt ? new Date(data.createdAt).toLocaleString('de-DE') : 'Unbekannt'}</span>
+                                </div>
+                                <p><strong>Haupt-Kategorie:</strong> ${mainCat} | <strong>Status-Kategorie:</strong> ${category}</p>
+                                <p><strong>Links:</strong> <a href="${links}" target="_blank">${links}</a></p>
+                                
+                                <div class="actions">
+                                    <button class="btn-approve" onclick="updateStatus('${id}', 'approved')">Freigeben</button>
+                                    <button class="btn-reject" onclick="deleteSubmission('${id}')">Ablehnen / Löschen</button>
+                                </div>
+                            </div>
+                        `;
+                    } else if (data.status === "approved") {
+                        hasApproved = true;
+                        approvedHTML += `
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3>${data.username}</h3>
+                                    <span>Erstellt: ${data.createdAt ? new Date(data.createdAt).toLocaleString('de-DE') : 'Unbekannt'}</span>
+                                </div>
+                                <p><strong>Links:</strong> <a href="${links}" target="_blank">${links}</a></p>
+                                
+                                <div class="actions">
+                                    <label>Haupt-Kategorie:</label>
+                                    <select onchange="updateMainCategory('${id}', this.value)">
+                                        <option value="Dom" ${mainCat === 'Dom' ? 'selected' : ''}>Dom</option>
+                                        <option value="Sub" ${mainCat === 'Sub' ? 'selected' : ''}>Sub</option>
+                                    </select>
 
-                            <button class="btn-approve" onclick="window.approveItem('${document.id}')">Freigeben</button>
-                            <button class="btn-delete" onclick="window.deleteItem('${document.id}')">Löschen</button>
-                        </div>
-                    `;
+                                    <label>Status:</label>
+                                    <select onchange="updateCategory('${id}', this.value)">
+                                        <option value="ungeprüft" ${category === 'ungeprüft' ? 'selected' : ''}>ungeprüft</option>
+                                        <option value="Echt" ${category === 'Echt' ? 'selected' : ''}>Echt</option>
+                                        <option value="Zeitverschwendung" ${category === 'Zeitverschwendung' ? 'selected' : ''}>Zeitverschwendung</option>
+                                    </select>
+
+                                    <button class="btn-delete" onclick="deleteSubmission('${id}')">Löschen</button>
+                                </div>
+                                ${reportsHTML}
+                            </div>
+                        `;
+                    }
                 });
-                pendingList.innerHTML = html;
+
+                pendingList.innerHTML = hasPending ? pendingHTML : "<p>Keine ausstehenden Anträge vorhanden.</p>";
+                approvedList.innerHTML = hasApproved ? approvedHTML : "<p>Keine freigegebenen Einträge vorhanden.</p>";
+
             } catch (error) {
-                pendingList.textContent = "Fehler beim Laden der offenen Einträge.";
+                pendingList.textContent = "Fehler beim Laden der Admin-Daten.";
+                approvedList.textContent = "";
+                console.error(error);
             }
         }
 
-        async function loadApproved() {
-            const approvedList = document.getElementById('approvedList');
-            try {
-                const q = query(collection(db, "submissions"), where("status", "==", "approved"));
-                const querySnapshot = await getDocs(q);
-
-                if (querySnapshot.empty) {
-                    approvedList.innerHTML = "<p>Keine veröffentlichten Einträge vorhanden.</p>";
-                    return;
-                }
-
-                let html = '';
-                querySnapshot.forEach((document) => {
-                    const data = document.data();
-                    const currentCat = data.category || "ungeprüft";
-                    const imageHtml = data.imageUrl ? `<img src="${data.imageUrl}" alt="Bild">` : '';
-                    const reportsHtml = renderReportsHtml(data.reports);
-
-                    html += `
-                        <div class="admin-card" id="card-${document.id}" style="background: #f0fff0;">
-                            ${imageHtml}
-                            <p><strong>Hauptkategorie:</strong> ${data.mainCategory || 'Dom'}</p>
-                            <h3>${data.username}</h3>
-                            <p><a href="${data.profileLinks[0]}" target="_blank">Profil-Link öffnen</a></p>
-                            ${reportsHtml}
-                            <br>
-                            <label><strong>Kategorie anpassen:</strong></label><br>
-                            <select id="update-category-${document.id}">
-                                <option value="ungeprüft" ${currentCat === 'ungeprüft' ? 'selected' : ''}>ungeprüft</option>
-                                <option value="Echt" ${currentCat === 'Echt' ? 'selected' : ''}>Echt</option>
-                                <option value="nicht Echt" ${currentCat === 'nicht Echt' ? 'selected' : ''}>nicht Echt</option>
-                                <option value="Zeitverschwendung" ${currentCat === 'Zeitverschwendung' ? 'selected' : ''}>Zeitverschwendung</option>
-                            </select><br><br>
-
-                            <button class="btn-update" onclick="window.updateItem('${document.id}')">Änderung speichern</button>
-                            <button class="btn-delete" onclick="window.deleteItem('${document.id}')">Eintrag löschen</button>
-                        </div>
-                    `;
-                });
-                approvedList.innerHTML = html;
-            } catch (error) {
-                approvedList.textContent = "Fehler beim Laden der freigegebenen Einträge.";
-            }
-        }
-
-        window.approveItem = async function(id) {
-            const category = document.getElementById(`category-${id}`).value;
+        // Globale Funktionen für die Admin-Aktionen
+        window.updateStatus = async function(id, newStatus) {
             try {
                 const docRef = doc(db, "submissions", id);
-                await updateDoc(docRef, { status: "approved", category: category });
-                alert("Erfolgreich freigegeben!");
-                loadAllSubmissions();
+                await updateDoc(docRef, { status: newStatus });
+                loadAdminData();
             } catch (error) {
-                alert("Fehler beim Freigeben: " + error.message);
+                alert("Fehler: " + error.message);
             }
         };
 
-        window.updateItem = async function(id) {
-            const newCategory = document.getElementById(`update-category-${id}`).value;
+        window.updateMainCategory = async function(id, newMainCat) {
             try {
                 const docRef = doc(db, "submissions", id);
-                await updateDoc(docRef, { category: newCategory });
-                alert("Änderung erfolgreich gespeichert!");
-                loadAllSubmissions();
+                await updateDoc(docRef, { mainCategory: newMainCat });
             } catch (error) {
-                alert("Fehler beim Speichern: " + error.message);
+                alert("Fehler beim Ändern der Haupt-Kategorie: " + error.message);
             }
         };
 
-        window.deleteItem = async function(id) {
-            if (confirm("Möchtest du diesen Eintrag wirklich dauerhaft löschen?")) {
+        window.updateCategory = async function(id, newCat) {
+            try {
+                const docRef = doc(db, "submissions", id);
+                await updateDoc(docRef, { category: newCat });
+            } catch (error) {
+                alert("Fehler beim Ändern der Kategorie: " + error.message);
+            }
+        };
+
+        window.deleteSubmission = async function(id) {
+            if (confirm("Mistest du diesen Eintrag wirklich unwiderruflich löschen?")) {
                 try {
                     await deleteDoc(doc(db, "submissions", id));
-                    alert("Eintrag gelöscht!");
-                    loadAllSubmissions();
+                    loadAdminData();
                 } catch (error) {
                     alert("Fehler beim Löschen: " + error.message);
                 }
             }
         };
+
+        loadAdminData();
     </script>
 </body>
 </html>
