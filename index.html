@@ -68,7 +68,8 @@
     <div id="gallery" class="grid">Lade Einträge...</div>
 
     <script type="module">
-        import { db, collection, getDocs, doc, updateDoc, arrayUnion, query, where } from './app.js';
+        import { db } from './app.js';
+        import { collection, getDocs, doc, updateDoc, arrayUnion, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         let allSubmissions = [];
         let currentTab = "all";
@@ -158,9 +159,7 @@
             attachCardEventListeners();
         }
 
-        // Event-Listener dynamisch an die Kartenelemente binden (verhindert Modul-Scope-Fehler)
         function attachCardEventListeners() {
-            // Melden-Formular ein-/ausblenden
             document.querySelectorAll('.report-toggle').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const id = e.target.getAttribute('data-id');
@@ -169,7 +168,6 @@
                 });
             });
 
-            // Zeichenzähler live aktualisieren
             document.querySelectorAll('.report-form textarea').forEach(textarea => {
                 textarea.addEventListener('input', (e) => {
                     const id = e.target.id.replace('report-text-', '');
@@ -179,7 +177,6 @@
                 });
             });
 
-            // Nachricht absenden
             document.querySelectorAll('.report-send-btn').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const id = e.target.getAttribute('data-id');
@@ -214,7 +211,6 @@
             });
         }
 
-        // Tab-Klicks verarbeiten
         tabButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 tabButtons.forEach(b => b.classList.remove('active'));
@@ -224,7 +220,6 @@
             });
         });
 
-        // Live-Suche
         searchInput.addEventListener('input', () => {
             filterAndRender();
         });
