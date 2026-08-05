@@ -47,7 +47,7 @@ export const storage = getStorage(app);
 export const auth = getAuth(app);
 export { analytics };
 
-// Funktionen exportieren (jetzt inklusive deleteDoc)
+// Funktionen exportieren (inklusive deleteDoc)
 export { 
   collection, 
   addDoc, 
