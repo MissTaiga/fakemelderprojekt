@@ -12,6 +12,8 @@
         .admin-card img { max-width: 120px; display: block; margin-bottom: 10px; border-radius: 4px; }
         input, select, button { padding: 8px; margin-right: 5px; margin-bottom: 10px; }
         .btn-approve { background: #28a745; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .btn-update { background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .btn-update:hover { background: #0056b3; }
         .btn-delete { background: #dc3545; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
         
         /* Farbliche Markierungen für die Badges */
@@ -110,9 +112,11 @@
                 let html = '';
                 querySnapshot.forEach((document) => {
                     const data = document.data();
+                    const imageHtml = data.imageUrl ? `<img src="${data.imageUrl}" alt="Bild">` : '<p style="color: #888; font-style: italic;">Kein Bild hochgeladen</p>';
+
                     html += `
                         <div class="admin-card" id="card-${document.id}">
-                            <img src="${data.imageUrl}" alt="">
+                            ${imageHtml}
                             <h3>${data.username}</h3>
                             <p><a href="${data.profileLinks[0]}" target="_blank">Profil-Link öffnen</a></p>
                             
@@ -136,7 +140,7 @@
             }
         }
 
-        // 2. Bereits freigegebene Einträge laden
+        // 2. Bereits freigegebene Einträge laden (jetzt mit Dropdown zum Ändern)
         async function loadApproved() {
             const approvedList = document.getElementById('approvedList');
             try {
@@ -151,19 +155,25 @@
                 let html = '';
                 querySnapshot.forEach((document) => {
                     const data = document.data();
-                    
-                    // Klasse für die jeweilige Badge-Farbe bestimmen
-                    let badgeClass = "bg-ungeprueft";
-                    const cat = data.category || "ungeprüft";
-                    if (cat === "Zeitverschwendung" || cat === "nicht Echt") badgeClass = "bg-zeitverschwendung";
-                    if (cat === "Echt") badgeClass = "bg-echt";
+                    const currentCat = data.category || "ungeprüft";
+                    const imageHtml = data.imageUrl ? `<img src="${data.imageUrl}" alt="Bild">` : '';
 
                     html += `
                         <div class="admin-card" id="card-${document.id}" style="background: #f0fff0;">
-                            <img src="${data.imageUrl}" alt="">
+                            ${imageHtml}
                             <h3>${data.username}</h3>
-                            <p><strong>Kategorie:</strong> <span class="badge ${badgeClass}">${cat}</span></p>
-                            <button class="btn-delete" onclick="window.deleteItem('${document.id}')">Eintrag unwiderruflich löschen</button>
+                            <p><a href="${data.profileLinks[0]}" target="_blank">Profil-Link öffnen</a></p>
+                            
+                            <label><strong>Kategorie anpassen:</strong></label><br>
+                            <select id="update-category-${document.id}">
+                                <option value="ungeprüft" ${currentCat === 'ungeprüft' ? 'selected' : ''}>ungeprüft</option>
+                                <option value="Echt" ${currentCat === 'Echt' ? 'selected' : ''}>Echt</option>
+                                <option value="nicht Echt" ${currentCat === 'nicht Echt' ? 'selected' : ''}>nicht Echt</option>
+                                <option value="Zeitverschwendung" ${currentCat === 'Zeitverschwendung' ? 'selected' : ''}>Zeitverschwendung</option>
+                            </select><br><br>
+
+                            <button class="btn-update" onclick="window.updateItem('${document.id}')">Änderung speichern</button>
+                            <button class="btn-delete" onclick="window.deleteItem('${document.id}')">Eintrag löschen</button>
                         </div>
                     `;
                 });
@@ -174,7 +184,7 @@
             }
         }
 
-        // Funktion: Freigeben mit Kategorie
+        // Funktion: Erstmaliges Freigeben
         window.approveItem = async function(id) {
             const category = document.getElementById(`category-${id}`).value;
 
@@ -188,6 +198,22 @@
                 loadAllSubmissions();
             } catch (error) {
                 alert("Fehler beim Freigeben: " + error.message);
+            }
+        };
+
+        // Funktion: Bereits veröffentlichten Eintrag nachträglich ändern
+        window.updateItem = async function(id) {
+            const newCategory = document.getElementById(`update-category-${id}`).value;
+
+            try {
+                const docRef = doc(db, "submissions", id);
+                await updateDoc(docRef, {
+                    category: newCategory
+                });
+                alert("Änderung erfolgreich gespeichert!");
+                loadAllSubmissions();
+            } catch (error) {
+                alert("Fehler beim Speichern: " + error.message);
             }
         };
 
