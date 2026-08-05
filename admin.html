@@ -2,13 +2,16 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Moderation</title>
+    <title>Admin - Moderation & Verwaltung</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
-        .admin-card { border: 1px solid #ff9800; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #fffdf5; }
-        .admin-card img { max-width: 150px; display: block; margin-bottom: 10px; }
+        body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; }
+        .admin-card { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #fffdf5; }
+        .admin-card img { max-width: 120px; display: block; margin-bottom: 10px; border-radius: 4px; }
         input, button { padding: 8px; margin-right: 5px; }
+        .btn-approve { background: #28a745; color: white; border: none; cursor: pointer; }
+        .btn-delete { background: #dc3545; color: white; border: none; cursor: pointer; }
         #loginSection, #adminSection { display: none; }
+        .section-title { margin-top: 30px; border-bottom: 2px solid #333; padding-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -23,31 +26,35 @@
 
     <!-- Admin Dashboard -->
     <div id="adminSection">
-        <h2>Offene Einsendungen zur Prüfung</h2>
         <button id="logoutBtn" style="float: right;">Abmelden</button>
+        <h1>Admin Dashboard</h1>
+
+        <h2 class="section-title">Offene Einsendungen zur Prüfung</h2>
         <div id="pendingList">Lade offene Einsendungen...</div>
+
+        <h2 class="section-title">Bereits veröffentlichte Einträge</h2>
+        <div id="approvedList">Lade veröffentlichte Einträge...</div>
     </div>
 
     <script type="module">
-        import { auth, db, collection, getDocs, doc, updateDoc, query, where, signInWithEmailAndPassword, onAuthStateChanged, signOut } from './app.js';
+        import { auth, db, collection, getDocs, doc, updateDoc, deleteDoc, query, where, signInWithEmailAndPassword, onAuthStateChanged, signOut } from './app.js';
 
         const loginSection = document.getElementById('loginSection');
         const adminSection = document.getElementById('adminSection');
-        const pendingList = document.getElementById('pendingList');
 
         // Auth Status prüfen
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 loginSection.style.display = 'none';
                 adminSection.style.display = 'block';
-                loadPendingSubmissions();
+                loadAllSubmissions();
             } else {
                 loginSection.style.display = 'block';
                 adminSection.style.display = 'none';
             }
         });
 
-        // Login ausführen
+        // Login
         document.getElementById('loginBtn').addEventListener('click', async () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -61,8 +68,15 @@
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
 
-        // Offene Einträge laden
-        async function loadPendingSubmissions() {
+        // Alle Daten laden (Offene & Freigegebene)
+        async function loadAllSubmissions() {
+            loadPending();
+            loadApproved();
+        }
+
+        // 1. Offene Einträge laden
+        async function loadPending() {
+            const pendingList = document.getElementById('pendingList');
             try {
                 const q = query(collection(db, "submissions"), where("status", "==", "pending"));
                 const querySnapshot = await getDocs(q);
@@ -82,19 +96,48 @@
                             <p><a href="${data.profileLinks[0]}" target="_blank">Profil-Link öffnen</a></p>
                             <label>Bewertung (z.B. Punkte):</label>
                             <input type="number" id="rating-${document.id}" placeholder="z.B. 8.5">
-                            <button onclick="window.approveItem('${document.id}')" style="background: green; color: white;">Freigeben</button>
-                            <button onclick="window.rejectItem('${document.id}')" style="background: red; color: white;">Ablehnen</button>
+                            <button class="btn-approve" onclick="window.approveItem('${document.id}')">Freigeben</button>
+                            <button class="btn-delete" onclick="window.deleteItem('${document.id}')">Löschen</button>
                         </div>
                     `;
                 });
                 pendingList.innerHTML = html;
             } catch (error) {
                 pendingList.textContent = "Fehler beim Laden.";
-                console.error(error);
             }
         }
 
-        // Global machen für die onclick-Buttons
+        // 2. Bereits freigegebene Einträge laden (um sie löschen zu können)
+        async function loadApproved() {
+            const approvedList = document.getElementById('approvedList');
+            try {
+                const q = query(collection(db, "submissions"), where("status", "==", "approved"));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    approvedList.innerHTML = "<p>Keine veröffentlichten Einträge vorhanden.</p>";
+                    return;
+                }
+
+                let html = '';
+                querySnapshot.forEach((document) => {
+                    const data = document.data();
+                    html += `
+                        <div class="admin-card" id="card-${document.id}" style="background: #f0fff0;">
+                            <img src="${data.imageUrl}" alt="">
+                            <h3>${data.username}</h3>
+                            <p><strong>Aktuelle Bewertung:</strong> ${data.rating} Punkte</p>
+                            <button class="btn-delete" onclick="window.deleteItem('${document.id}')">Eintrag unwiderruflich löschen</button>
+                        </div>
+                    `;
+                });
+                approvedList.innerHTML = html;
+            } catch (error) {
+                approvedList.textContent = "Fehler beim Laden.";
+            }
+        }
+
+        // Funktion: Freigeben
         window.approveItem = async function(id) {
             const ratingInput = document.getElementById(`rating-${id}`).value;
             const rating = ratingInput ? parseFloat(ratingInput) : 0;
@@ -105,25 +148,25 @@
                     status: "approved",
                     rating: rating
                 });
-                document.getElementById(`card-${id}`).remove();
                 alert("Erfolgreich freigegeben!");
+                loadAllSubmissions(); // Liste aktualisieren
             } catch (error) {
-                alert("Fehler: " + error.message);
+                alert("Fehler beim Freigeben: " + error.message);
             }
-        }
+        };
 
-        window.rejectItem = async function(id) {
-            try {
-                const docRef = doc(db, "submissions", id);
-                await updateDoc(docRef, {
-                    status: "rejected"
-                });
-                document.getElementById(`card-${id}`).remove();
-                alert("Eintrag abgelehnt.");
-            } catch (error) {
-                alert("Fehler: " + error.message);
+        // Funktion: Endgültig löschen
+        window.deleteItem = async function(id) {
+            if (confirm("Möchtest du diesen Eintrag wirklich dauerhaft löschen?")) {
+                try {
+                    await deleteDoc(doc(db, "submissions", id));
+                    alert("Eintrag gelöscht!");
+                    loadAllSubmissions(); // Liste aktualisieren
+                } catch (error) {
+                    alert("Fehler beim Löschen: " + error.message);
+                }
             }
-        }
+        };
     </script>
 </body>
 </html>
