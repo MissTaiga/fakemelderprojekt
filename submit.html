@@ -1,67 +1,108 @@
-// Importiere die benötigten Firebase-Module (Version 10+)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { 
-  getStorage, 
-  ref, 
-  uploadBytes, 
-  getDownloadURL 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
-import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
-  onAuthStateChanged, 
-  signOut 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Profil einreichen</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; background: #fdfbf7; color: #333; }
+        .nav-back { margin-bottom: 20px; }
+        .btn-back { display: inline-block; padding: 8px 15px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; font-size: 14px; font-weight: bold; }
+        .btn-back:hover { background: #5a6268; }
+        form { background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; }
+        label { display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; }
+        input, button { display: block; width: 100%; margin-bottom: 15px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #28a745; color: white; font-weight: bold; border: none; cursor: pointer; }
+        button:hover { background: #218838; }
+        button:disabled { background: #94d3a2; cursor: not-allowed; }
+        #statusMsg { font-weight: bold; text-align: center; margin-top: 15px; }
+    </style>
+</head>
+<body>
 
-// Deine Firebase-Konfiguration
-const firebaseConfig = {
-  apiKey: "AIzaSyBs9XJHIZHmbbEMpdz0gTqGziFX76hUK_k",
-  authDomain: "fakemelderprojekt.firebaseapp.com",
-  projectId: "fakemelderprojekt",
-  storageBucket: "fakemelderprojekt.firebasestorage.app",
-  messagingSenderId: "40516507468",
-  appId: "1:40516507468:web:1b3724bb3e7b83e724a1e9",
-  measurementId: "G-GKVHDHPGWW"
-};
+    <!-- Zurück-Button zur Startseite -->
+    <div class="nav-back">
+        <a href="index.html" class="btn-back">← Zurück zur Startseite</a>
+    </div>
 
-// Firebase initialisieren
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+    <h1>Profil / Datei einreichen</h1>
+    <form id="submitForm">
+        <label for="username">Benutzername:</label>
+        <input type="text" id="username" required>
 
-// Instanzen exportieren
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-export const auth = getAuth(app);
-export { analytics };
+        <label for="profileLink">Profil-Link (z.B. Social Media):</label>
+        <input type="url" id="profileLink" required>
 
-// Funktionen exportieren (inklusive deleteDoc)
-export { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  serverTimestamp, 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  signInWithEmailAndPassword, 
-  onAuthStateChanged, 
-  signOut 
-};
+        <label for="imageFile">Bilddatei:</label>
+        <input type="file" id="imageFile" accept="image/*" required>
+
+        <button type="submit" id="submitBtn">Absenden</button>
+    </form>
+    <p id="statusMsg"></p>
+
+    <script type="module">
+        import { db, collection, addDoc, serverTimestamp } from './app.js';
+
+        // Automatisch Benutzernamen aus der URL übernehmen (falls über die Suche gekommen)
+        const urlParams = new URLSearchParams(window.location.search);
+        const prefilledUsername = urlParams.get('username');
+        if (prefilledUsername) {
+            document.getElementById('username').value = prefilledUsername;
+        }
+
+        const form = document.getElementById('submitForm');
+        const statusMsg = document.getElementById('statusMsg');
+
+        // Hilfsfunktion: Konvertiert das Bild in einen Base64-Textstring
+        function convertFileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            statusMsg.textContent = "Wird verarbeitet...";
+            statusMsg.style.color = "#333";
+
+            try {
+                const username = document.getElementById('username').value;
+                const profileLink = document.getElementById('profileLink').value;
+                const fileInput = document.getElementById('imageFile').files[0];
+
+                if (!fileInput) {
+                    throw new Error("Bitte wähle eine Bilddatei aus.");
+                }
+
+                // 1. Bild im Browser in Base64 umwandeln
+                const base64Image = await convertFileToBase64(fileInput);
+
+                // 2. Daten direkt in Firestore speichern (Status: pending)
+                await addDoc(collection(db, "submissions"), {
+                    username: username,
+                    profileLinks: [profileLink],
+                    imageUrl: base64Image,
+                    status: "pending",
+                    rating: null,
+                    category: "ungeprüft",
+                    createdAt: serverTimestamp()
+                });
+
+                statusMsg.textContent = "Erfolgreich eingereicht! Wartet auf Freigabe.";
+                statusMsg.style.color = "#28a745";
+                form.reset();
+            } catch (error) {
+                console.error("Fehler:", error);
+                statusMsg.textContent = "Fehler beim Einreichen: " + error.message;
+                statusMsg.style.color = "#dc3545";
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
