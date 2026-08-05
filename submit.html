@@ -26,31 +26,44 @@
     <p id="statusMsg"></p>
 
     <script type="module">
-        import { db, storage, collection, addDoc, ref, uploadBytes, getDownloadURL, serverTimestamp } from './app.js';
+        import { db, collection, addDoc, serverTimestamp } from './app.js';
 
         const form = document.getElementById('submitForm');
         const statusMsg = document.getElementById('statusMsg');
 
+        // Hilfsfunktion: Konvertiert das Bild in einen Base64-Textstring
+        function convertFileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            document.getElementById('submitBtn').disabled = true;
-            statusMsg.textContent = "Wird hochgeladen...";
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            statusMsg.textContent = "Wird verarbeitet...";
 
             try {
                 const username = document.getElementById('username').value;
                 const profileLink = document.getElementById('profileLink').value;
                 const fileInput = document.getElementById('imageFile').files[0];
 
-                // 1. Bild in Firebase Storage hochladen
-                const storageRef = ref(storage, `uploads/${Date.now()}_${fileInput.name}`);
-                const snapshot = await uploadBytes(storageRef, fileInput);
-                const imageUrl = await getDownloadURL(snapshot.ref);
+                if (!fileInput) {
+                    throw new Error("Bitte wähle eine Bilddatei aus.");
+                }
 
-                // 2. Daten in Firestore speichern (Status: pending)
+                // 1. Bild direkt im Browser in Base64 umwandeln
+                const base64Image = await convertFileToBase64(fileInput);
+
+                // 2. Daten direkt in Firestore speichern (Status: pending)
                 await addDoc(collection(db, "submissions"), {
                     username: username,
                     profileLinks: [profileLink],
-                    imageUrl: imageUrl,
+                    imageUrl: base64Image, // Hier speichern wir den Bild-Code direkt
                     status: "pending",
                     rating: null,
                     createdAt: serverTimestamp()
@@ -60,9 +73,9 @@
                 form.reset();
             } catch (error) {
                 console.error("Fehler:", error);
-                statusMsg.textContent = "Fehler beim Hochladen: " + error.message;
+                statusMsg.textContent = "Fehler beim Einreichen: " + error.message;
             } finally {
-                document.getElementById('submitBtn').disabled = false;
+                submitBtn.disabled = false;
             }
         });
     </script>
