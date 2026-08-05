@@ -13,15 +13,18 @@
         input, select, button { padding: 8px; margin-right: 5px; margin-bottom: 10px; }
         .btn-approve { background: #28a745; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
         .btn-update { background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        .btn-update:hover { background: #0056b3; }
         .btn-delete { background: #dc3545; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
         
-        /* Farbliche Markierungen für die Badges */
         .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 12px; }
-        .bg-zeitverschwendung { background: #dc3545; } /* Rot */
-        .bg-ungeprueft { background: #fd7e14; }      /* Orange */
-        .bg-echt { background: #28a745; }           /* Grün */
-        .bg-nicht-echt { background: #dc3545; }     /* Rot */
+        .bg-zeitverschwendung { background: #dc3545; }
+        .bg-ungeprueft { background: #fd7e14; }
+        .bg-echt { background: #28a745; }
+        .bg-nicht-echt { background: #dc3545; }
+
+        /* Admin-Meldungsbox */
+        .reports-box { margin-top: 10px; padding: 8px; background: #ffeeba; border: 1px solid #ffdf7e; border-radius: 4px; font-size: 13px; }
+        .reports-box ul { margin: 5px 0 0 15px; padding: 0; }
+        .reports-box li { margin-bottom: 4px; }
 
         #loginSection, #adminSection { display: none; }
         .section-title { margin-top: 30px; border-bottom: 2px solid #333; padding-bottom: 5px; }
@@ -36,7 +39,6 @@
 
     <div id="loadingAuth">Überprüfe Anmelde-Status...</div>
 
-    <!-- Login Formular -->
     <div id="loginSection">
         <h2>Admin Login</h2>
         <input type="email" id="email" placeholder="E-Mail"><br><br>
@@ -45,7 +47,6 @@
         <p id="loginError" style="color: red; font-weight: bold;"></p>
     </div>
 
-    <!-- Admin Dashboard -->
     <div id="adminSection">
         <button id="logoutBtn" class="btn-delete" style="float: right;">Abmelden</button>
         <h1>Admin Dashboard</h1>
@@ -85,7 +86,6 @@
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
-                console.error("Login-Fehler:", error);
                 loginError.textContent = "Login fehlgeschlagen: " + error.message;
             }
         });
@@ -97,7 +97,23 @@
             loadApproved();
         }
 
-        // 1. Offene Einträge laden
+        // Hilfsfunktion zum Generieren des Melde-HTMLs für den Admin
+        function renderReportsHtml(reports) {
+            if (!reports || reports.length === 0) return '';
+            
+            let listItems = reports.map(r => {
+                const dateStr = new Date(r.createdAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+                return `<li><strong>[${dateStr}]</strong>: ${r.message}</li>`;
+            }).join('');
+
+            return `
+                <div class="reports-box">
+                    <strong>⚠️ Nutzer-Meldungen / Anmerkungen (${reports.length}):</strong>
+                    <ul>${listItems}</ul>
+                </div>
+            `;
+        }
+
         async function loadPending() {
             const pendingList = document.getElementById('pendingList');
             try {
@@ -113,13 +129,16 @@
                 querySnapshot.forEach((document) => {
                     const data = document.data();
                     const imageHtml = data.imageUrl ? `<img src="${data.imageUrl}" alt="Bild">` : '<p style="color: #888; font-style: italic;">Kein Bild hochgeladen</p>';
+                    const reportsHtml = renderReportsHtml(data.reports);
 
                     html += `
                         <div class="admin-card" id="card-${document.id}">
                             ${imageHtml}
+                            <p><strong>Hauptkategorie:</strong> ${data.mainCategory || 'Dom'}</p>
                             <h3>${data.username}</h3>
                             <p><a href="${data.profileLinks[0]}" target="_blank">Profil-Link öffnen</a></p>
-                            
+                            ${reportsHtml}
+                            <br>
                             <label><strong>Kategorie wählen:</strong></label><br>
                             <select id="category-${document.id}">
                                 <option value="ungeprüft">ungeprüft</option>
@@ -136,11 +155,9 @@
                 pendingList.innerHTML = html;
             } catch (error) {
                 pendingList.textContent = "Fehler beim Laden der offenen Einträge.";
-                console.error(error);
             }
         }
 
-        // 2. Bereits freigegebene Einträge laden (jetzt mit Dropdown zum Ändern)
         async function loadApproved() {
             const approvedList = document.getElementById('approvedList');
             try {
@@ -157,13 +174,16 @@
                     const data = document.data();
                     const currentCat = data.category || "ungeprüft";
                     const imageHtml = data.imageUrl ? `<img src="${data.imageUrl}" alt="Bild">` : '';
+                    const reportsHtml = renderReportsHtml(data.reports);
 
                     html += `
                         <div class="admin-card" id="card-${document.id}" style="background: #f0fff0;">
                             ${imageHtml}
+                            <p><strong>Hauptkategorie:</strong> ${data.mainCategory || 'Dom'}</p>
                             <h3>${data.username}</h3>
                             <p><a href="${data.profileLinks[0]}" target="_blank">Profil-Link öffnen</a></p>
-                            
+                            ${reportsHtml}
+                            <br>
                             <label><strong>Kategorie anpassen:</strong></label><br>
                             <select id="update-category-${document.id}">
                                 <option value="ungeprüft" ${currentCat === 'ungeprüft' ? 'selected' : ''}>ungeprüft</option>
@@ -180,20 +200,14 @@
                 approvedList.innerHTML = html;
             } catch (error) {
                 approvedList.textContent = "Fehler beim Laden der freigegebenen Einträge.";
-                console.error(error);
             }
         }
 
-        // Funktion: Erstmaliges Freigeben
         window.approveItem = async function(id) {
             const category = document.getElementById(`category-${id}`).value;
-
             try {
                 const docRef = doc(db, "submissions", id);
-                await updateDoc(docRef, {
-                    status: "approved",
-                    category: category
-                });
+                await updateDoc(docRef, { status: "approved", category: category });
                 alert("Erfolgreich freigegeben!");
                 loadAllSubmissions();
             } catch (error) {
@@ -201,15 +215,11 @@
             }
         };
 
-        // Funktion: Bereits veröffentlichten Eintrag nachträglich ändern
         window.updateItem = async function(id) {
             const newCategory = document.getElementById(`update-category-${id}`).value;
-
             try {
                 const docRef = doc(db, "submissions", id);
-                await updateDoc(docRef, {
-                    category: newCategory
-                });
+                await updateDoc(docRef, { category: newCategory });
                 alert("Änderung erfolgreich gespeichert!");
                 loadAllSubmissions();
             } catch (error) {
@@ -217,7 +227,6 @@
             }
         };
 
-        // Funktion: Endgültig löschen
         window.deleteItem = async function(id) {
             if (confirm("Möchtest du diesen Eintrag wirklich dauerhaft löschen?")) {
                 try {
