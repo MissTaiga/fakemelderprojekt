@@ -92,8 +92,8 @@
             }
 
             notFoundContainer.style.display = "none";
+            // Hier wird bewusst KEIN Bild (<img>) mehr generiert
             gallery.innerHTML = items.map(item => {
-                // Badge-Farbe anhand der Admin-Kategorie bestimmen
                 let badgeClass = "bg-ungeprueft";
                 const cat = item.category || "ungeprüft";
                 if (cat === "Zeitverschwendung" || cat === "nicht Echt") badgeClass = "bg-zeitverschwendung";
@@ -110,10 +110,10 @@
             }).join('');
         }
 
-        // Live-Suche
+        // Live-Suche (korrigiert)
         searchInput.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
-            const filtered = allSubmissions.get ? ... : allSubmissions.filter(item => 
+            const filtered = allSubmissions.filter(item => 
                 item.username.toLowerCase().includes(term)
             );
             renderGallery(filtered, term);
